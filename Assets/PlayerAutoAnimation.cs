@@ -5,22 +5,27 @@ using UnityEngine;
 public class PlayerAutoAnimation : MonoBehaviour
 {
     [SerializeField] Transform[] animationObjs;
-    [SerializeField] float animationTime=0.5f;
+    [SerializeField] float animationTime = 0.5f;
     [SerializeField] internal int animationNum;
-
-    private void Awake() 
+    [SerializeField] bool notRepeated;
+    [SerializeField] bool onAlert;
+    Player player;
+    private void Awake()
     {
-        Transform[] tempObjs=GetComponentsInChildren<Transform>(true);
-        animationObjs=new Transform[tempObjs.Length-1];
+        player = GetComponentInParent<Player>();
+        Transform[] tempObjs = GetComponentsInChildren<Transform>(true);
+        animationObjs = new Transform[tempObjs.Length - 1];
         for (int i = 1; i < tempObjs.Length; i++)
         {
-            animationObjs[i-1]=tempObjs[i];
+            animationObjs[i - 1] = tempObjs[i];
         }
-         
+
     }
     private void OnEnable()
     {
+        animationNum=0;
         StartCoroutine(AnimRoutine());
+        
     }
     // internal void AnimStart()
     // {
@@ -36,8 +41,17 @@ public class PlayerAutoAnimation : MonoBehaviour
 
             animationNum++;
 
-            if (animationObjs.Length-1 < animationNum)
+            if (animationObjs.Length - 1 < animationNum)
+            {
                 animationNum = 0;
+                if (notRepeated)
+                {
+                    if (onAlert)
+                        player.AlertAnim();
+                    break;
+                }
+
+            }
         }
     }
     void AnimObjSetActive(Transform[] offObjs, Transform onObj)
