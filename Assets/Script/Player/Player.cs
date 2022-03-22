@@ -10,6 +10,7 @@ public class Player : MonoBehaviour
     [Header("----------Ability----------")]
     [SerializeField] float jumpPower = 1;
     [SerializeField] float moveSpeed = 1;
+    [SerializeField] float attackCoolTime = 0.6f;
     [Header("----------BodyState----------")]
     // [SerializeField] GameObject currentBody;
     [SerializeField] internal GameObject[] bodyObjs;
@@ -21,11 +22,12 @@ public class Player : MonoBehaviour
     [Header("----------Base----------")]
     [SerializeField] GameObject baseModel;
     Rigidbody2D playerRigid;
-    bool isJump;
-    bool isMove;
-    [SerializeField] bool isIdle;
-    internal bool isAttack;
-    bool isAlert;
+    [SerializeField]bool isJump;
+    [SerializeField]bool isMove;
+    [SerializeField]bool isIdle;
+    [SerializeField]bool isDown;
+    [SerializeField]internal bool isAttack;
+    [SerializeField]bool isAlert;
     private void Awake()
     {
         Init();
@@ -67,6 +69,8 @@ public class Player : MonoBehaviour
     void MovePlayer()
     {
         Vector3 moveVelocity = Vector3.zero;
+        if (isDown||isAttack)
+            return;
         if (Input.GetKey(KeyCode.LeftArrow))
         {
             transform.rotation = Quaternion.Euler(0, 0, 0);
@@ -96,7 +100,7 @@ public class Player : MonoBehaviour
             playerRigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
         }
     }
-     void JumpAnim()
+    void JumpAnim()
     {
         if (isJump)
             return;
@@ -116,53 +120,112 @@ public class Player : MonoBehaviour
             tempAnim = currentAnim[2];
             AnimChange(tempAnim);
         }
+        AttackAnim();
         if (isJump)
             return;
+        DownAnim();
         MoveAnim();
         IdleAnim();
-        AttackAnim();
+
 
     }
+    void DownAnim()
+    {
+        if (Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            isDown = true;
+            // isIdle = false;
+            // isMove=true;
+            tempAnim = currentAnim[3];
+            AnimChange(tempAnim);
+        }
+        else if (Input.GetKeyUp(KeyCode.DownArrow))
+        {
+            isDown = false;
+            isIdle = false;
+            isMove = false;
+            // isIdle=false;
+            // // isMove=true;
+            // tempAnim = currentAnim[3];
+            // AnimChange(tempAnim);
+        }
+    }
+
     void MoveAnim()
     {
 
-       
-        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.RightArrow))
+        if (Input.GetKeyUp(KeyCode.LeftArrow) || Input.GetKeyUp(KeyCode.RightArrow))
         {
+            isMove = false;
             isIdle = false;
-            // isMove=true;
+            // if(!Input.GetKey(KeyCode.DownArrow))
+            isDown = false;
+        }
+        else if ((Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow)) && !isMove)
+        {
+            isMove = true;
+            isDown = false;
+            // isIdle = false;
             tempAnim = currentAnim[1];
             AnimChange(tempAnim);
         }
-        
+
+
+
     }
     void IdleAnim()
     {
-        if (!Input.anyKey && !isIdle && !isAttack)
+        // if (!Input.anyKey && !isIdle && !isAttack)
+        if (!isDown && !isIdle && !isAttack && !isJump && !isMove)
         {
             isIdle = true;
             // isMove=false;
             tempAnim = currentAnim[0];
             if (isAlert)
             {
-                tempAnim = currentAnim[5];
+                tempAnim = currentAnim[6];
             }
             AnimChange(tempAnim);
-            
+
         }
 
     }
     void AttackAnim()
     {
-        if (Input.GetKeyDown(KeyCode.LeftControl))
+        if (Input.GetKey(KeyCode.LeftControl)&&!isAttack)
         {
+            
+
             isAttack = true;
             isIdle = false;
-            int attackNum=Random.Range(6,9);
+            int attackNum = Random.Range(7, 10);
             tempAnim = currentAnim[attackNum];
+            if (Input.GetKey(KeyCode.DownArrow))
+                tempAnim = currentAnim[4];
             AnimChange(tempAnim);
-        }
 
+            if (tempAttackCoolTimeAnimRoutine != null)
+            {
+                StopCoroutine(tempAttackCoolTimeAnimRoutine);
+            }
+            tempAttackCoolTimeAnimRoutine = AttackCoolTimeAnimRoutine();
+            StartCoroutine(tempAttackCoolTimeAnimRoutine);
+        }
+    }
+    IEnumerator tempAttackCoolTimeAnimRoutine;
+    IEnumerator AttackCoolTimeAnimRoutine()
+    {
+        float coolTime = 0f;
+        print("1");
+        while (coolTime<attackCoolTime)
+        {
+            coolTime += Time.deltaTime;
+            yield return null;
+        }
+        print("2");
+        isAttack = false;
+        isMove=false;
+        
     }
     IEnumerator tempAlertAnimRoutine;
     IEnumerator AlertAnimRoutine()
@@ -170,16 +233,16 @@ public class Player : MonoBehaviour
         print("코루틴실행");
         yield return TimeExtensions.WaitForSeconds(5f);
         isAlert = false;
-        isIdle=false;
+        isIdle = false;
         // IdleAnim();
 
     }
     internal void AlertAnim()
     {
         isAlert = true;
-        isAttack = false;
-        tempAnim = currentAnim[5];
-        AnimChange(tempAnim);
+        // isAttack = false;
+
+
         if (tempAlertAnimRoutine != null)
         {
             StopCoroutine(tempAlertAnimRoutine);
@@ -192,6 +255,9 @@ public class Player : MonoBehaviour
     {
 
         isJump = false;
+        if (isAttack)
+            return;
+
         IdleAnim();
         if ((Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow)) && !Input.GetKey(KeyCode.LeftAlt))
         {
