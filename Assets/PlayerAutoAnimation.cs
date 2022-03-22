@@ -47,7 +47,9 @@ public class PlayerAutoAnimation : MonoBehaviour
                 if (notRepeated)
                 {
                     if (onAlert)
+                    {                       
                         player.AlertAnim();
+                    }
                     break;
                 }
 

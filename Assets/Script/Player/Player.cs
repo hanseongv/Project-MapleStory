@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class Player : MonoBehaviour
 {
@@ -22,8 +23,9 @@ public class Player : MonoBehaviour
     Rigidbody2D playerRigid;
     bool isJump;
     bool isMove;
-    bool isIdle;
-    bool isAttack;
+    [SerializeField] bool isIdle;
+    internal bool isAttack;
+    bool isAlert;
     private void Awake()
     {
         Init();
@@ -94,10 +96,23 @@ public class Player : MonoBehaviour
             playerRigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
         }
     }
+     void JumpAnim()
+    {
+        if (isJump)
+            return;
+        if (Input.GetKey(KeyCode.LeftAlt))
+        {
+            isJump = true;
+            isIdle = false;
+            playerRigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
+        }
+    }
+
     void MoveAnimPlayer()
     {
         if (Input.GetKeyDown(KeyCode.LeftAlt))
         {
+            //점프
             tempAnim = currentAnim[2];
             AnimChange(tempAnim);
         }
@@ -111,22 +126,29 @@ public class Player : MonoBehaviour
     void MoveAnim()
     {
 
+       
         if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.RightArrow))
         {
             isIdle = false;
+            // isMove=true;
             tempAnim = currentAnim[1];
             AnimChange(tempAnim);
         }
-
+        
     }
     void IdleAnim()
     {
-        if (!Input.anyKey && !isIdle)
+        if (!Input.anyKey && !isIdle && !isAttack)
         {
             isIdle = true;
+            // isMove=false;
             tempAnim = currentAnim[0];
+            if (isAlert)
+            {
+                tempAnim = currentAnim[5];
+            }
             AnimChange(tempAnim);
-
+            
         }
 
     }
@@ -135,17 +157,37 @@ public class Player : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.LeftControl))
         {
             isAttack = true;
-            tempAnim = currentAnim[3];
+            isIdle = false;
+            int attackNum=Random.Range(6,9);
+            tempAnim = currentAnim[attackNum];
             AnimChange(tempAnim);
         }
 
     }
+    IEnumerator tempAlertAnimRoutine;
+    IEnumerator AlertAnimRoutine()
+    {
+        print("코루틴실행");
+        yield return TimeExtensions.WaitForSeconds(5f);
+        isAlert = false;
+        isIdle=false;
+        // IdleAnim();
+
+    }
     internal void AlertAnim()
     {
-
-        tempAnim = currentAnim[4];
+        isAlert = true;
+        isAttack = false;
+        tempAnim = currentAnim[5];
         AnimChange(tempAnim);
+        if (tempAlertAnimRoutine != null)
+        {
+            StopCoroutine(tempAlertAnimRoutine);
+        }
+        tempAlertAnimRoutine = AlertAnimRoutine();
+        StartCoroutine(tempAlertAnimRoutine);
     }
+
     void LandingPlayer()
     {
 
