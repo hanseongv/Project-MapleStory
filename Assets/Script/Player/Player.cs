@@ -11,6 +11,7 @@ public class Player : MonoBehaviour
     [SerializeField] float jumpPower = 1;
     [SerializeField] float moveSpeed = 1;
     [SerializeField] float attackCoolTime = 0.6f;
+    [SerializeField] int jumpCount;
     [Header("----------BodyState----------")]
     // [SerializeField] GameObject currentBody;
     [SerializeField] internal GameObject[] bodyObjs;
@@ -22,12 +23,14 @@ public class Player : MonoBehaviour
     [Header("----------Base----------")]
     [SerializeField] GameObject baseModel;
     Rigidbody2D playerRigid;
-    [SerializeField]bool isJump;
-    [SerializeField]bool isMove;
-    [SerializeField]bool isIdle;
-    [SerializeField]bool isDown;
-    [SerializeField]internal bool isAttack;
-    [SerializeField]bool isAlert;
+
+    [SerializeField] bool isJump;
+    [SerializeField] bool isMove;
+    [SerializeField] bool isIdle;
+    [SerializeField] bool isDown;
+    [SerializeField] internal bool isAttack;
+    [SerializeField] bool isAlert;
+    BoxCollider2D playerCollider;
     private void Awake()
     {
         Init();
@@ -39,6 +42,7 @@ public class Player : MonoBehaviour
         baseModel.SetActive(false);
         // normalAnim = bodyObjs[0].GetComponentsInChildren<PlayerAutoAnimation>(true);
         // fullAnim = bodyObjs[1].GetComponentsInChildren<PlayerAutoAnimation>(true);
+        playerCollider = GetComponent<BoxCollider2D>();
         currentAnim = bodyObjs[0].GetComponentsInChildren<PlayerAutoAnimation>(true);
         playerRigid = GetComponent<Rigidbody2D>();
         AnimChange(currentAnim[0]);
@@ -69,7 +73,7 @@ public class Player : MonoBehaviour
     void MovePlayer()
     {
         Vector3 moveVelocity = Vector3.zero;
-        if (isDown||isAttack)
+        if (isDown || isAttack)
             return;
         if (Input.GetKey(KeyCode.LeftArrow))
         {
@@ -88,25 +92,74 @@ public class Player : MonoBehaviour
         // }
         transform.position += moveVelocity * moveSpeed * Time.deltaTime;
         Jump();
+        Jumping();
     }
     void Jump()
     {
-        if (isJump)
+        if (isJump||0<jumpCount)
             return;
+        
         if (Input.GetKey(KeyCode.LeftAlt))
         {
-            isJump = true;
+            // isJump = true;
             isIdle = false;
             playerRigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
+            jumpCount++;
         }
     }
+    [SerializeField]float test;
+    void Jumping()
+    {
+        // if(playerRigid.velocity.y<=0&&isJump)
+        // {
+        //     playerCollider.isTrigger=false;
+        // }
+        // else if(0<playerRigid.velocity.y)
+        // {
+        //     playerCollider.isTrigger=true;
+        // }
+
+        RaycastHit2D raycastHit = Physics2D.BoxCast(playerCollider.bounds.center, playerCollider.bounds.size, 0f, Vector2.down*test, 0.02f, LayerMask.GetMask("Ground"));
+        Debug.DrawRay(playerCollider.bounds.center, Vector2.down*test, Color.red, 0.02f);
+        if (raycastHit.collider != null)
+        {
+            playerCollider.isTrigger = false;
+            isJump=false;
+        }
+
+        else
+        {
+            playerCollider.isTrigger = true;
+            jumpCount=0;
+            // isJump=true;
+        }
+        // print(raycastHit.collider);
+        //0.02f
+
+    }
+
+    //    void OnDrawGizmos()
+    // {
+    //     RaycastHit2D raycastHit = Physics2D.BoxCast(transform.position, boxCastSize, 0f, Vector2.down, boxCastMaxDistance, LayerMask.GetMask("Ground"));
+
+    //     Gizmos.color = Color.red;
+    //     if (raycastHit.collider != null)
+    //     {
+    //         Gizmos.DrawRay(transform.position, Vector2.down * raycastHit.distance);
+    //         Gizmos.DrawWireCube(transform.position + Vector3.down * raycastHit.distance, boxCastSize);
+    //     }
+    //     else
+    //     {
+    //         Gizmos.DrawRay(transform.position, Vector2.down * boxCastMaxDistance);
+    //     }
+    // }
     void JumpAnim()
     {
         if (isJump)
             return;
         if (Input.GetKey(KeyCode.LeftAlt))
         {
-            isJump = true;
+            // isJump = true;
             isIdle = false;
             playerRigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
         }
@@ -192,9 +245,9 @@ public class Player : MonoBehaviour
     }
     void AttackAnim()
     {
-        if (Input.GetKey(KeyCode.LeftControl)&&!isAttack)
+        if (Input.GetKey(KeyCode.LeftControl) && !isAttack)
         {
-            
+
 
             isAttack = true;
             isIdle = false;
@@ -217,15 +270,15 @@ public class Player : MonoBehaviour
     {
         float coolTime = 0f;
         print("1");
-        while (coolTime<attackCoolTime)
+        while (coolTime < attackCoolTime)
         {
             coolTime += Time.deltaTime;
             yield return null;
         }
         print("2");
         isAttack = false;
-        isMove=false;
-        
+        isMove = false;
+
     }
     IEnumerator tempAlertAnimRoutine;
     IEnumerator AlertAnimRoutine()
@@ -253,18 +306,20 @@ public class Player : MonoBehaviour
 
     void LandingPlayer()
     {
+        jumpCount=0;
+        // // playerCollider.isTrigger=true;
+        // isJump = false;
+        // // playerCollider.isTrigger=false;
+        // if (isAttack)
+        //     return;
 
-        isJump = false;
-        if (isAttack)
-            return;
-
-        IdleAnim();
-        if ((Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow)) && !Input.GetKey(KeyCode.LeftAlt))
-        {
-            isIdle = false;
-            tempAnim = currentAnim[1];
-            AnimChange(tempAnim);
-        }
+        // IdleAnim();
+        // if ((Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow)) && !Input.GetKey(KeyCode.LeftAlt))
+        // {
+        //     isIdle = false;
+        //     tempAnim = currentAnim[1];
+        //     AnimChange(tempAnim);
+        // }
     }
     internal void ChangeModel(int num)
     {
@@ -276,11 +331,26 @@ public class Player : MonoBehaviour
         currentAnim = bodyObjs[num].GetComponentsInChildren<PlayerAutoAnimation>(true);
         AnimChange(currentAnim[0]);
     }
-    private void OnCollisionEnter2D(Collision2D collision)
+    // private void OnCollisionEnter2D(Collision2D collision)
+    // {
+    //     if (collision.gameObject.CompareTag("Ground"))
+    //     {
+    //         LandingPlayer();
+    //     }
+    // }
+    private void OnCollisionStay(Collision other) 
     {
-        if (collision.gameObject.CompareTag("Ground"))
+              if (other.gameObject.CompareTag("Ground"))
         {
             LandingPlayer();
         }
     }
+    // private void OnTriggerEnter2D(Collider other) 
+    // {
+    //        if (other.gameObject.CompareTag("Ground"))
+    //     {
+    //         LandingPlayer();
+    //     }
+    // }
+
 }
